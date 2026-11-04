@@ -1,0 +1,453 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Địa lý thế giới</title>
+
+    <!-- Kết nối CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🌍 TRẮC NGHIỆM ĐỊA LÝ THẾ GIỚI</h1>
+    <p class="subtitle">
+        Kiểm tra kiến thức của bạn qua 20 câu hỏi
+    </p>
+
+    <div class="quiz-box">
+
+        <div id="quiz">
+
+            <div class="info">
+                <span id="number">Câu 1 / 20</span>
+                <span id="score">Điểm: 0</span>
+            </div>
+
+            <div class="progress">
+                <div class="progress-bar" id="progress"></div>
+            </div>
+
+            <h2 id="question"></h2>
+
+            <div id="answers"></div>
+
+            <p id="feedback"></p>
+
+            <div class="buttons">
+                <button class="action" onclick="restart()">
+                    Làm lại
+                </button>
+
+                <button class="action" id="next"
+                    onclick="nextQuestion()" disabled>
+                    Câu tiếp theo →
+                </button>
+            </div>
+
+        </div>
+
+        <div id="result">
+
+            <h2>🏆 HOÀN THÀNH BÀI THI!</h2>
+
+            <div class="score" id="finalScore"></div>
+
+           <p id="message"></p>
+
+        <div class="result-stats">
+        <div class="stat-item">
+        <strong id="correctCount">0</strong>
+        <span>Câu trả lời đúng</span>
+    </div>
+
+    <div class="stat-item">
+        <strong id="wrongCount">0</strong>
+        <span>Câu trả lời sai</span>
+    </div>
+
+    <div class="stat-item">
+        <strong id="accuracy">0%</strong>
+        <span>Độ chính xác</span>
+    </div>
+</div>
+
+            <button class="action" onclick="restart()">
+                Làm lại bài
+            </button>
+
+            <div class="review" id="review"></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+// DANH SÁCH CÂU HỎI
+const questions = [
+
+{
+    q: "Quốc gia nào có diện tích lớn nhất thế giới?",
+    a: ["Trung Quốc", "Liên bang Nga", "Hoa Kỳ", "Canada"],
+    c: 1
+},
+
+{
+    q: "Thủ đô của đất nước Honduras là gì?",
+    a: ["La Paz", "Belmopan", "San Salvador", "Tegucigalpa"],
+    c: 3
+},
+
+{
+    q: "Quốc gia nào ở châu Âu có lãnh thổ được ví von có hình lục lăng?",
+    a: ["Đức", "Tây Ban Nha", "Pháp", "Ý"],
+    c: 2
+},
+
+{
+    q: 'Quốc gia Đông Á nào được mệnh danh là "vùng đất của bầu trời xanh"?',
+    a: ["Trung Quốc", "Mông Cổ", "Hàn Quốc", "CHDCND Triều Tiên"],
+    c: 1
+},
+
+{
+    q: 'Đất nước nào được gọi là "Món quà của sông Nile"?',
+    a: ["Israel", "Libya", "Ai Cập", "Tunisia"],
+    c: 2
+},
+
+{
+    q: "Quốc gia nào có nhiều thủ đô chính thức nhất thế giới?",
+    a: ["Bờ Biển Ngà", "Sri Lanka", "Nam Phi", "Benin"],
+    c: 2,
+    explain: "Nam Phi có 3 thủ đô: Pretoria, Cape Town và Bloemfontein."
+},
+
+{
+    q: "Angkor Wat thuộc quốc gia Đông Nam Á nào?",
+    a: ["Thái Lan", "Campuchia", "Lào", "Việt Nam"],
+    c: 1
+},
+
+{
+    q: "Quốc gia nào là quê hương của pho mát Parmesan?",
+    a: ["Pháp", "Thụy Sĩ", "Tây Ban Nha", "Italia (Ý)"],
+    c: 3
+},
+
+{
+    q: "Thành phố lịch sử Jerusalem nằm ở quốc gia Trung Đông nào?",
+    a: ["Iran", "Jordan", "Israel", "Liban"],
+    c: 2,
+    explain: "Đây là đáp án theo bộ tham khảo; tình trạng Jerusalem còn tranh chấp quốc tế."
+},
+
+{
+    q: "Hồ Baikal nằm tại quốc gia nào?",
+    a: ["Trung Quốc", "Mông Cổ", "Nga", "Kazakhstan"],
+    c: 2
+},
+
+{
+    q: "Thủ đô Viêng Chăn của Lào còn có tên gọi truyền thống nào?",
+    a: ["Vạn Tượng", "Mường Chăn", "Vọng Các", "Nam Vang"],
+    c: 0
+},
+
+{
+    q: "Quốc gia nào có dân số đông nhất thế giới hiện nay?",
+    a: ["Ấn Độ", "Trung Quốc", "Hoa Kỳ", "Indonesia"],
+    c: 0
+},
+
+{
+    q: "Quốc gia nhỏ nhất thế giới nằm bên trong thành phố Roma là gì?",
+    a: ["Monaco", "San Marino", "Vatican", "Liechtenstein"],
+    c: 2
+},
+
+{
+    q: "Đảo quốc nào nổi tiếng với Bali và quần đảo Komodo?",
+    a: ["Philippines", "Malaysia", "Indonesia", "Singapore"],
+    c: 2
+},
+
+{
+    q: "Quốc gia Nam Mỹ nào sử dụng tiếng Bồ Đào Nha?",
+    a: ["Argentina", "Colombia", "Brazil", "Chile"],
+    c: 2
+},
+
+{
+    q: "Theo bộ đáp án tham khảo, Nhật Bản chưa có văn bản pháp luật chính thức nào xác định thành phố nào là thủ đô?",
+    a: ["Kyoto", "Osaka", "Tokyo", "Chưa có văn bản chính thức xác định Tokyo"],
+    c: 3,
+    explain: "Tokyo được xem là thủ đô trên thực tế của Nhật Bản."
+},
+
+{
+    q: "Kim tự tháp Giza nổi tiếng thế giới nằm ở quốc gia nào?",
+    a: ["Sudan", "Ai Cập", "Iraq", "Jordan"],
+    c: 1
+},
+
+{
+    q: 'Biểu tượng "Cây phong" xuất hiện trên quốc kỳ nước nào?',
+    a: ["Thụy Sĩ", "Canada", "New Zealand", "Thụy Điển"],
+    c: 1
+},
+
+{
+    q: "Dãy núi Andes nằm ở lục địa nào?",
+    a: ["Châu Âu", "Châu Á", "Nam Mỹ", "Bắc Mỹ"],
+    c: 2
+},
+
+{
+    q: "Thủ đô của nước Úc là thành phố nào?",
+    a: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+    c: 2
+}
+
+];
+
+// BIẾN QUẢN LÝ
+let current = 0;
+let score = 0;
+let selected = false;
+let userAnswers = [];
+
+// HIỂN THỊ CÂU HỎI
+function showQuestion() {
+
+    selected = false;
+
+    const q = questions[current];
+
+    document.getElementById("number").textContent =
+        `Câu ${current + 1} / ${questions.length}`;
+
+    document.getElementById("score").textContent =
+        "Điểm: " + score;
+
+    document.getElementById("progress").style.width =
+        (current / questions.length * 100) + "%";
+
+    document.getElementById("question").textContent = q.q;
+
+    document.getElementById("feedback").textContent = "";
+
+    document.getElementById("next").disabled = true;
+
+    document.getElementById("next").textContent =
+        current === questions.length - 1
+        ? "Xem kết quả"
+        : "Câu tiếp theo →";
+
+    const answers = document.getElementById("answers");
+
+    answers.innerHTML = "";
+
+    q.a.forEach((answer, index) => {
+
+        const btn = document.createElement("button");
+
+        btn.className = "answer";
+
+        btn.textContent = "ABCD"[index] + ". " + answer;
+
+        btn.onclick = () => checkAnswer(index);
+
+        answers.appendChild(btn);
+
+    });
+
+}
+
+// KIỂM TRA ĐÁP ÁN
+function checkAnswer(index) {
+
+    if (selected) return;
+
+    selected = true;
+
+    const q = questions[current];
+
+    userAnswers[current] = index;
+
+    const buttons = document.querySelectorAll(".answer");
+
+    buttons.forEach((btn, i) => {
+
+        btn.disabled = true;
+
+        if (i === q.c) {
+            btn.classList.add("correct");
+        }
+
+        if (i === index && index !== q.c) {
+            btn.classList.add("wrong");
+        }
+
+    });
+
+    const feedback = document.getElementById("feedback");
+
+    if (index === q.c) {
+
+        score++;
+
+        feedback.style.color = "green";
+
+        feedback.textContent = "✓ Chính xác! Bạn trả lời đúng.";
+
+    } else {
+
+        feedback.style.color = "red";
+
+        feedback.textContent =
+            "✗ Sai rồi! Đáp án đúng là " +
+            "ABCD"[q.c] + ". " + q.a[q.c];
+
+    }
+
+    if (q.explain) {
+        feedback.textContent += " " + q.explain;
+    }
+
+    document.getElementById("score").textContent =
+        "Điểm: " + score;
+
+    document.getElementById("next").disabled = false;
+
+}
+
+// CHUYỂN CÂU HỎI
+function nextQuestion() {
+
+    if (current < questions.length - 1) {
+
+        current++;
+
+        showQuestion();
+
+    } else {
+
+        showResult();
+
+    }
+
+}
+
+// HIỂN THỊ KẾT QUẢ
+function showResult() {
+
+    document.getElementById("quiz").classList.add("hidden");
+
+    document.getElementById("result").style.display = "block";
+
+    document.getElementById("progress").style.width = "100%";
+
+    // Tính điểm
+    const total = questions.length;
+    const correct = score;
+    const wrong = total - correct;
+    const accuracy = Math.round(correct / total * 100);
+    const finalScore = (correct / total * 10).toFixed(1);
+
+    // Hiển thị điểm trên thang 10
+    document.getElementById("finalScore").textContent =
+        finalScore + " / 10";
+
+    // Hiển thị thống kê
+    document.getElementById("correctCount").textContent = correct;
+
+    document.getElementById("wrongCount").textContent = wrong;
+
+    document.getElementById("accuracy").textContent =
+        accuracy + "%";
+
+    // Nhận xét kết quả
+    let message = "";
+
+    if (accuracy >= 90) {
+        message = "Xuất sắc! Bạn có kiến thức địa lý rất tốt.";
+    } else if (accuracy >= 70) {
+        message = "Khá tốt! Hãy tiếp tục phát huy nhé.";
+    } else if (accuracy >= 50) {
+        message = "Không tệ! Bạn hãy cố gắng thêm nhé.";
+    } else {
+        message = "Bạn cần ôn tập thêm kiến thức địa lý nhé!";
+    }
+
+    document.getElementById("message").textContent = message;
+
+    // Xem lại đáp án
+    const review = document.getElementById("review");
+
+    review.innerHTML = "<h3>ĐÁP ÁN CHI TIẾT</h3>";
+
+    questions.forEach((q, i) => {
+
+        const div = document.createElement("div");
+
+        div.className = "review-item";
+
+        const chosen = userAnswers[i];
+
+        div.innerHTML = `
+            <strong>Câu ${i + 1}: ${q.q}</strong>
+
+            <div style="color:${chosen === q.c ? '#16a34a' : '#dc2626'}">
+                Bạn chọn: ${chosen === undefined
+                    ? "Chưa trả lời"
+                    : "ABCD"[chosen] + ". " + q.a[chosen]}
+            </div>
+
+            <div style="color:#16a34a">
+                Đáp án đúng: ${"ABCD"[q.c]}. ${q.a[q.c]}
+            </div>
+
+            ${q.explain ? `<div>${q.explain}</div>` : ""}
+        `;
+
+        review.appendChild(div);
+
+    });
+
+}
+// LÀM LẠI
+function restart() {
+
+    current = 0;
+
+    score = 0;
+
+    selected = false;
+
+    userAnswers = [];
+
+    document.getElementById("quiz").classList.remove("hidden");
+
+    document.getElementById("result").style.display = "none";
+
+    showQuestion();
+
+    window.scrollTo(0, 0);
+
+}
+
+// CHẠY WEBSITE
+showQuestion();
+
+</script>
+
+</body>
+</html>
