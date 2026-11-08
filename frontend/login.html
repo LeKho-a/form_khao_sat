@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập - Task Manager</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <h1 style="text-align:center">✅ Task<span style="color:var(--primary)">Manager</span></h1>
+      <p class="muted" style="text-align:center;margin-top:0">Quản lý tác vụ nhóm - UTH Nhóm 06</p>
+      <div class="tabs">
+        <button type="button" id="tab-login" class="active">Đăng nhập</button>
+        <button type="button" id="tab-register">Đăng ký</button>
+      </div>
+
+      <form id="form-login" novalidate>
+        <label for="l-email">Email</label>
+        <input id="l-email" type="email" autocomplete="username" placeholder="ban@uth.edu.vn">
+        <label for="l-pass">Mật khẩu</label>
+        <input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••">
+        <div class="error-text" id="l-err"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="l-btn">Đăng nhập</button>
+      </form>
+
+      <form id="form-register" class="hidden" novalidate>
+        <label for="r-name">Họ và tên</label>
+        <input id="r-name" type="text" autocomplete="name" placeholder="Nguyễn Văn A">
+        <label for="r-email">Email</label>
+        <input id="r-email" type="email" autocomplete="username" placeholder="ban@uth.edu.vn">
+        <div class="form-row">
+          <div><label for="r-pass">Mật khẩu</label><input id="r-pass" type="password" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></div>
+          <div><label for="r-pass2">Nhập lại</label><input id="r-pass2" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="error-text" id="r-err"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="r-btn">Tạo tài khoản</button>
+      </form>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
