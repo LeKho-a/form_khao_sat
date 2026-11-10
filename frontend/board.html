@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bảng Kanban - Task Manager</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-col">
+      <header id="topbar"></header>
+      <main class="container">
+        <a href="dashboard.html" class="back-link"><i data-icon="arrow-left" data-size="16"></i> Bảng điều khiển</a>
+        <div class="page-head" style="margin-top:8px">
+          <div>
+            <h1 id="p-name" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">Đang tải...</h1>
+            <div class="muted" id="p-desc"></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <div class="avatar-stack" id="p-team"></div>
+            <button class="btn" id="btn-members"><i data-icon="users" data-size="18"></i> Thành viên</button>
+            <button class="btn primary" id="btn-add"><i data-icon="plus" data-size="16"></i> Thêm task</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="field search-field"><i data-icon="search" data-size="18"></i><input id="f-q" type="search" aria-label="Tìm task" placeholder="Tìm task..."></div>
+          <div class="field">
+            <select id="f-priority">
+              <option value="">Mọi mức ưu tiên</option>
+              <option value="urgent">Khẩn cấp</option><option value="high">Cao</option>
+              <option value="medium">Trung bình</option><option value="low">Thấp</option>
+            </select>
+          </div>
+          <div class="field"><select id="f-assignee"></select></div>
+          <button class="btn sm ghost" id="f-clear">Xóa bộ lọc</button>
+          <span class="muted small" id="f-count"></span>
+          <span class="spacer"></span>
+          <div class="view-toggle">
+            <button type="button" id="view-kanban" class="active with-ic"><i data-icon="kanban" data-size="16"></i> Kanban</button>
+            <button type="button" id="view-list" class="with-ic"><i data-icon="rows" data-size="16"></i> Danh sách</button>
+          </div>
+        </div>
+
+        <div class="board" id="board"></div>
+      </main>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/icons-data.js"></script>
+  <script src="js/icon.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/board.js"></script>
+</body>
+</html>

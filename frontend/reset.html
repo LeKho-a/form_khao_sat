@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đặt lại mật khẩu - Task Manager</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="card auth-card">
+      <div class="es-ic" style="margin:0 auto 6px"><i data-icon="key" data-size="32"></i></div>
+      <h1 style="text-align:center">Đặt lại mật khẩu</h1>
+      <form id="form-reset" novalidate>
+        <label for="p1">Mật khẩu mới</label>
+        <input id="p1" type="password" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự">
+        <label for="p2">Nhập lại mật khẩu mới</label>
+        <input id="p2" type="password" autocomplete="new-password">
+        <div class="error-text" id="r-err"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="r-btn">Đặt lại mật khẩu</button>
+      </form>
+      <div id="done" class="hidden" style="text-align:center">
+        <p id="done-msg"></p>
+        <a class="btn primary" href="login.html">Đến trang đăng nhập</a>
+      </div>
+      <p style="text-align:center;margin:14px 0 0"><a href="login.html" class="with-ic"><i data-icon="arrow-left" data-size="14"></i> Quay lại đăng nhập</a></p>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/icons-data.js"></script>
+  <script src="js/icon.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/reset.js"></script>
+</body>
+</html>

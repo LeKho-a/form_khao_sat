@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đăng nhập - Task Manager</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-split">
+    <section class="auth-hero">
+      <div class="side-brand" style="padding:0"><img class="logo-img" src="img/logo.svg" alt="" width="38" height="38"><span>Task<b style="color:#fff">Manager</b></span></div>
+      <h1>Làm việc nhóm gọn gàng, rõ ràng.</h1>
+      <p style="margin:0;opacity:.9">Quản lý công việc bằng bảng Kanban, phân quyền theo dự án và cập nhật theo thời gian thực.</p>
+      <ul>
+        <li><span class="hero-ic"><i data-icon="kanban" data-size="20"></i></span> Kanban kéo thả, sắp xếp thứ tự ngay trong cột</li>
+        <li><span class="hero-ic"><i data-icon="bell" data-size="20"></i></span> Thông báo tức thì khi được giao việc hoặc có bình luận</li>
+        <li><span class="hero-ic"><i data-icon="users" data-size="20"></i></span> Phân quyền chủ dự án / trưởng nhóm / thành viên</li>
+      </ul>
+    </section>
+    <section class="auth-pane">
+    <div class="card auth-card">
+      <h1 class="auth-logo"><img class="logo-img" src="img/logo.svg" alt="" width="46" height="46"><span class="word">Task<b>Manager</b></span></h1>
+      <p class="muted" style="text-align:center;margin-top:0">Quản lý tác vụ nhóm - UTH Nhóm 06</p>
+      <div class="tabs">
+        <button type="button" id="tab-login" class="active">Đăng nhập</button>
+        <button type="button" id="tab-register">Đăng ký</button>
+      </div>
+
+      <form id="form-login" novalidate>
+        <label for="l-email">Email</label>
+        <input id="l-email" type="email" autocomplete="username" placeholder="ban@uth.edu.vn">
+        <label for="l-pass">Mật khẩu</label>
+        <input id="l-pass" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu">
+        <div class="error-text" id="l-err"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="l-btn">Đăng nhập</button>
+        <p style="text-align:center;margin:14px 0 0"><a href="#" id="link-forgot">Quên mật khẩu?</a></p>
+      </form>
+
+      <form id="form-forgot" class="hidden" novalidate>
+        <h3 style="margin-top:14px">Quên mật khẩu</h3>
+        <p class="muted small" style="margin-top:0">Nhập email tài khoản, hệ thống sẽ gửi liên kết đặt lại mật khẩu (hiệu lực 1 giờ).</p>
+        <label for="f-email">Email</label>
+        <input id="f-email" type="email" autocomplete="username" placeholder="ban@uth.edu.vn">
+        <div class="error-text" id="f-err"></div>
+        <div id="f-ok" class="hidden card" style="margin:8px 0;padding:10px"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="f-btn">Gửi liên kết đặt lại</button>
+        <p style="text-align:center;margin:14px 0 0"><a href="#" id="link-back" class="with-ic"><i data-icon="arrow-left" data-size="14"></i> Quay lại đăng nhập</a></p>
+      </form>
+
+      <form id="form-register" class="hidden" novalidate>
+        <label for="r-name">Họ và tên</label>
+        <input id="r-name" type="text" autocomplete="name" placeholder="Nguyễn Văn A">
+        <label for="r-email">Email</label>
+        <input id="r-email" type="email" autocomplete="username" placeholder="ban@uth.edu.vn">
+        <div class="form-row">
+          <div><label for="r-pass">Mật khẩu</label><input id="r-pass" type="password" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></div>
+          <div><label for="r-pass2">Nhập lại</label><input id="r-pass2" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="error-text" id="r-err"></div>
+        <button class="btn primary" style="width:100%;margin-top:6px" id="r-btn">Tạo tài khoản</button>
+      </form>
+    </div>
+    </section>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/icons-data.js"></script>
+  <script src="js/icon.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
