@@ -1,6 +1,8 @@
 // Lớp gọi API + quản lý phiên đăng nhập (JWT lưu trong localStorage)
-const API_BASE = (location.protocol === 'file:' || (location.port && location.port !== '5000'))
-    ? 'http://localhost:5000' : '';
+// Sửa lại dòng này trong api.js để hỗ trợ chạy chuẩn trên Render Static Site
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000' 
+    : 'https://form-khao-sat.onrender.com';
 
 const Auth = {
     get token() { return localStorage.getItem('tm_token'); },
