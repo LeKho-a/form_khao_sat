@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bảng điều khiển - Task Manager</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar"></aside>
+    <div class="main-col">
+      <header id="topbar"></header>
+      <main class="container">
+        <div class="page-head">
+          <div>
+            <h1 id="hello">Xin chào</h1>
+            <div class="greet-sub" id="hello-sub">Tổng quan công việc của bạn trên tất cả dự án.</div>
+          </div>
+          <button class="btn primary" id="btn-new-project"><i data-icon="plus" data-size="16"></i> Dự án mới</button>
+        </div>
+
+        <section class="grid stats" id="stats"></section>
+
+        <section class="dash-grid">
+          <div class="card">
+            <div class="card-head"><h2>Việc của tôi</h2><a href="my-tasks.html" class="small with-ic">Xem tất cả <i data-icon="arrow-right" data-size="14"></i></a></div>
+            <div id="mine-tabs"></div>
+            <div id="mine"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Tiến độ tổng thể</h2></div>
+            <div id="progress"></div>
+          </div>
+        </section>
+
+        <h2>Dự án của tôi</h2>
+        <section class="grid projects" id="projects"></section>
+      </main>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script src="js/icons-data.js"></script>
+  <script src="js/icon.js"></script>
+  <script src="js/motion.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/notify.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
