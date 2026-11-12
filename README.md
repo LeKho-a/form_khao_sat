@@ -46,6 +46,9 @@ npm install
 cp .env.example .env        # rồi sửa DB_PASSWORD, JWT_SECRET trong file .env
                             # (CSDL cũ tự được nâng cấp khi server khởi động - không cần import lại database.sql)
 
+# 2b. Bật gửi email quên mật khẩu: mở backend/.env, điền SMTP_USER + SMTP_PASS (Mật khẩu ứng dụng Gmail),
+#     APP_URL, và đặt RESET_SHOW_LINK=false. Thử ngay:  npm run test-mail -- email_cua_ban@gmail.com
+
 # 3. Nạp tài khoản mẫu chuẩn (mật khẩu bcrypt thật) + vài task demo
 npm run seed
 
@@ -67,7 +70,7 @@ npm start                   # mở http://localhost:5000
 - **Sắp xếp thứ tự task trong cột:** kéo thả để đổi cột *và* chèn đúng vị trí (vạch xanh báo chỗ thả); thứ tự được lưu và giữ nguyên sau khi tải lại.
 - **Thông báo thời gian thực** (Server-Sent Events, không cần thư viện ngoài): chuông 🔔 + số chưa đọc + toast khi được giao việc, task đổi trạng thái, có bình luận mới, được thêm vào dự án. Bảng Kanban của các thành viên khác **tự cập nhật** khi có người thay đổi task.
 - **Hồ sơ cá nhân:** tải **ảnh đại diện** (tự cắt vuông + nén ở trình duyệt, server kiểm tra "chữ ký" file, chặn SVG), đổi họ tên, đổi mật khẩu.
-- **Quên mật khẩu:** liên kết đặt lại dùng 1 lần, hết hạn sau 1 giờ, DB chỉ lưu bản băm SHA-256 của token, giới hạn 5 lần/15 phút, không lộ email nào tồn tại. Có chế độ demo (hiện liên kết ngay trên trang) hoặc gửi email thật qua SMTP.
+- **Quên mật khẩu:** liên kết đặt lại dùng 1 lần, hết hạn sau 1 giờ, DB chỉ lưu bản băm SHA-256 của token, giới hạn 5 lần/15 phút, không lộ email nào tồn tại. Gửi email thật (có nút bấm) qua Gmail SMTP hoặc Brevo (HTTPS); có chế độ demo (hiện liên kết ngay trên trang) khi `RESET_SHOW_LINK=true`.
 - **Logo + bộ icon SVG riêng** (không dùng emoji): logo thiết kế riêng (3 cột Kanban + dấu tick), icon Phosphor Icons (MIT) kiểu hai tông màu, tự đổi màu theo giao diện sáng/tối.
 - **Thân thiện với người dùng:** lời chào theo giờ + tóm tắt việc hôm nay, trạng thái rỗng có hướng dẫn, khung chờ (skeleton) khi tải, huy hiệu có icon kèm chữ (không chỉ dựa vào màu), giao diện tự theo chế độ sáng/tối của hệ điều hành.
 - **Trợ năng (WCAG AA):** màu chữ/nút đạt tỉ lệ tương phản ≥ 4.5:1 ở cả hai giao diện (có test tự động), vòng focus rõ khi dùng bàn phím, liên kết "Bỏ qua điều hướng", nút bấm ≥ 40px, tôn trọng `prefers-reduced-motion`.

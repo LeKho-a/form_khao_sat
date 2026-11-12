@@ -13,16 +13,12 @@
     <div class="main-col">
       <header id="topbar"></header>
       <main class="container">
-        <a href="dashboard.html" class="back-link"><i data-icon="arrow-left" data-size="16"></i> Bảng điều khiển</a>
-        <div class="page-head" style="margin-top:8px">
-          <div>
-            <h1 id="p-name" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">Đang tải...</h1>
-            <div class="muted" id="p-desc"></div>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="board-bar">
+          <div class="muted" id="p-desc"></div>
+          <div class="bar-actions">
             <div class="avatar-stack" id="p-team"></div>
             <button class="btn" id="btn-members"><i data-icon="users" data-size="18"></i> Thành viên</button>
-            <button class="btn primary" id="btn-add"><i data-icon="plus" data-size="16"></i> Thêm task</button>
+            <button class="btn danger hidden" id="btn-delete-project"><i data-icon="trash" data-size="16"></i> Xóa dự án</button>
           </div>
         </div>
 
