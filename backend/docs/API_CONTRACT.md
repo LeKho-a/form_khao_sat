@@ -242,7 +242,7 @@
 ## 7. Module bổ sung: Mật khẩu · Hồ sơ · Thông báo · Sắp xếp task
 
 ### 7.1 Quên / đặt lại mật khẩu (không cần token)
-* `POST /api/auth/forgot-password` Body `{ "email": "a@uth.edu.vn" }` -> 200 `{ "message": "Nếu email tồn tại..." }` (luôn cùng thông điệp). 429 nếu gọi quá 5 lần/15 phút. Khi `RESET_SHOW_LINK=true` (demo) trả thêm `dev_reset_link`.
+* `POST /api/auth/forgot-password` Body `{ "email": "a@uth.edu.vn" }` -> 200 `{ "message": "Nếu email tồn tại..." }` (luôn cùng thông điệp). 429 nếu gọi quá 5 lần/15 phút. Server gửi email chứa liên kết `APP_URL/reset.html?token=...` (SMTP hoặc Brevo, xem `.env.example`). Khi `RESET_SHOW_LINK=true` (demo) trả thêm `dev_reset_link` và có thể không gửi mail.
 * `POST /api/auth/reset-password` Body `{ "token": "...", "password": "mat-khau-moi" }` -> 200 | 400 (token sai/hết hạn/đã dùng, mật khẩu ngoài 6-72 ký tự).
 
 ### 7.2 Hồ sơ cá nhân (Authorization: Bearer)
@@ -265,3 +265,14 @@
 ### 7.5 Việc của tôi (Authorization: Bearer)
 * `GET /api/tasks/mine` -> mọi task được giao cho tôi trên các dự án tôi tham gia (tối đa 300), sắp theo hạn chót:
   `[ { "id": 2, "project_id": 1, "project_name": "...", "title": "...", "status": "in_progress", "priority": "high", "due_date": "2026-11-15T23:59:59", "comment_count": 0 } ]`
+
+### 3.5 Xóa dự án
+* URL: DELETE /api/projects/:projectId
+* Header: Authorization: Bearer <token>
+* Quyền: chỉ **owner** của dự án.
+* Hiệu ứng: xóa toàn bộ task, bình luận, thành viên và thông báo gắn với dự án; thành viên khác nhận thông báo "đã xóa dự án".
+* Response:
+  - 200 OK: { "message": "Đã xóa dự án!" }
+  - 400: projectId không hợp lệ
+  - 403: { "message": "Chỉ chủ dự án (owner) mới được xóa dự án!" }
+  - 404: { "message": "Không tìm thấy dự án!" }

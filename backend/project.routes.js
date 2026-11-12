@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('./db');
 const verifyToken = require('./auth.middleware');
-const { notifyUsers, userName } = require('./realtime');
+const { notifyUsers, push, userName } = require('./realtime');
 
 // Mọi API dự án đều yêu cầu đăng nhập
 router.use(verifyToken);
@@ -188,6 +188,54 @@ router.get('/:projectId/tasks', async (req, res) => {
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: 'Lỗi máy chủ nội bộ!' });
+    }
+});
+
+// 3.5 Xóa dự án (DELETE /api/projects/:projectId) - chỉ owner
+// Task, bình luận, thành viên bị xóa theo (ON DELETE CASCADE); thông báo cũ của dự án cũng được dọn.
+router.delete('/:projectId', async (req, res) => {
+    const projectId = parseId(req.params.projectId);
+    if (!projectId) return res.status(400).json({ message: 'projectId không hợp lệ!' });
+
+    let conn;
+    try {
+        const access = await getProjectAccess(projectId, req.user.id);
+        if (!access) return res.status(404).json({ message: 'Không tìm thấy dự án!' });
+        if (access.project_role !== 'owner') {
+            return res.status(403).json({ message: 'Chỉ chủ dự án (owner) mới được xóa dự án!' });
+        }
+
+        // Lấy danh sách thành viên TRƯỚC khi xóa để còn báo cho họ
+        const [members] = await pool.query('SELECT user_id FROM project_members WHERE project_id = ?', [projectId]);
+        const memberIds = members.map((m) => m.user_id);
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+        // Xóa tường minh theo thứ tự con -> cha: vẫn chạy đúng cả khi CSDL cũ thiếu ON DELETE CASCADE
+        await conn.query('DELETE FROM comments WHERE task_id IN (SELECT id FROM tasks WHERE project_id = ?)', [projectId]);
+        await conn.query('DELETE FROM tasks WHERE project_id = ?', [projectId]);
+        await conn.query('DELETE FROM project_members WHERE project_id = ?', [projectId]);
+        await conn.query('DELETE FROM notifications WHERE project_id = ?', [projectId]); // tránh thông báo trỏ vào dự án đã mất
+        await conn.query('DELETE FROM projects WHERE id = ?', [projectId]);
+        await conn.commit();
+
+        // Báo cho các thành viên khác: bảng đang mở sẽ tự thoát, thông báo không gắn project_id (dự án không còn)
+        for (const uid of memberIds) {
+            if (uid !== req.user.id) {
+                push(uid, 'project_update', { project_id: projectId, action: 'project_deleted' });
+            }
+        }
+        await notifyUsers({
+            userIds: memberIds, actorId: req.user.id, type: 'project_deleted',
+            message: `${await userName(req.user.id)} đã xóa dự án "${access.name}"`
+        });
+        return res.status(200).json({ message: 'Đã xóa dự án!' });
+    } catch (err) {
+        if (conn) { try { await conn.rollback(); } catch (e) { /* bỏ qua */ } }
+        console.error(err);
+        return res.status(500).json({ message: 'Lỗi máy chủ nội bộ!' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

@@ -72,6 +72,11 @@ const pool = {
       async query(sql, p) {
         const s = sql.replace(/\s+/g, ' ');
         if (s.startsWith('INSERT INTO projects')) { const id = db.projects.length + 1; db.projects.push({ id, name: p[0], description: p[1], created_at: id }); return [{ insertId: id }]; }
+        if (s.startsWith('DELETE FROM comments WHERE task_id IN')) { const ids = db.tasks.filter(x => x.project_id === p[0]).map(x => x.id); db.comments = db.comments.filter(c => !ids.includes(c.task_id)); return [{}]; }
+        if (s.startsWith('DELETE FROM tasks WHERE project_id = ?')) { db.tasks = db.tasks.filter(x => x.project_id !== p[0]); return [{}]; }
+        if (s.startsWith('DELETE FROM project_members WHERE project_id = ?')) { db.pm = db.pm.filter(x => x.project_id !== p[0]); return [{}]; }
+        if (s.startsWith('DELETE FROM notifications WHERE project_id = ?')) { db.notifs = db.notifs.filter(n => n.project_id !== p[0]); return [{}]; }
+        if (s.startsWith('DELETE FROM projects WHERE id = ?')) { db.projects = db.projects.filter(x => x.id !== p[0]); return [{}]; }
         if (s.includes("'owner'")) { db.pm.push({ project_id: p[0], user_id: p[1], project_role: 'owner', joined_at: 9 }); return [{}]; }
         throw new Error('conn SQL chưa mock: ' + s);
       },
@@ -315,6 +320,43 @@ const t = (name, cond, extra) => { cond ? pass++ : fail++; console.log((cond ? '
   r = await PW('/reset-password', { token: again.j.dev_reset_link.split('token=')[1], password: 'matkhaumoi2' }); t('Đặt lại MK: token hết hạn -> 400', r.s === 400, r);
   let last; for (let i = 0; i < 6; i++) last = await PW('/forgot-password', { email: 'spam@uth.edu.vn' });
   t('Quên MK: gọi dồn dập -> 429', last.s === 429, last);
+
+  // ----- Gửi email thật (giả lập nodemailer + Brevo, không cần mạng) -----
+  const mailed = []; const prevLoad = Module._load;
+  Module._load = function (req) { if (req === 'nodemailer') return { createTransport: (o) => ({ sendMail: async (m) => { mailed.push({ o, m }); } }) }; return prevLoad.apply(this, arguments); };
+  Object.assign(process.env, { RESET_SHOW_LINK: 'false', SMTP_HOST: 'smtp.gmail.com', SMTP_USER: 'app@gmail.com', SMTP_PASS: 'abcd efgh ijkl mnop', APP_URL: 'https://app.example.com' });
+  r = await PW('/forgot-password', { email: 'bach@uth.edu.vn' });
+  t('Email SMTP: gửi đúng 1 thư tới đúng người nhận', r.s === 200 && mailed.length === 1 && mailed[0].m.to === 'bach@uth.edu.vn', [r, mailed.length]);
+  t('Email SMTP: thư có nút/liên kết đặt lại đúng địa chỉ APP_URL + token', mailed[0] && mailed[0].m.html.includes('https://app.example.com/reset.html?token=') && mailed[0].m.text.includes('/reset.html?token='), mailed[0] && mailed[0].m.text);
+  t('Email SMTP: dấu cách trong mật khẩu ứng dụng Gmail được loại bỏ', mailed[0] && mailed[0].o.auth.pass === 'abcdefghijklmnop' && mailed[0].o.port === 587 && mailed[0].o.secure === false, mailed[0] && mailed[0].o);
+  t('Email SMTP: không lộ liên kết trong phản hồi API khi tắt chế độ demo', r.j.dev_reset_link === undefined, r);
+  r = await PW('/forgot-password', { email: 'nguoila2@uth.edu.vn' });
+  t('Email SMTP: email không tồn tại -> không gửi thư, cùng thông điệp', r.s === 200 && mailed.length === 1, mailed.length);
+  Module._load = prevLoad;
+  delete process.env.SMTP_HOST;
+  const calls = []; const realFetch = global.fetch;
+  process.env.BREVO_API_KEY = 'xkeysib-test'; process.env.MAIL_FROM_EMAIL = 'gui@gmail.com';
+  global.fetch = async (url, o) => { calls.push({ url, o }); return { ok: true, status: 201, text: async () => '' }; };
+  r = await PW('/forgot-password', { email: 'fe1@uth.edu.vn' });
+  const body = calls[0] ? JSON.parse(calls[0].o.body) : {};
+  t('Email Brevo (HTTPS): gọi đúng API, có api-key, đúng người nhận + người gửi', r.s === 200 && calls[0].url === 'https://api.brevo.com/v3/smtp/email' && calls[0].o.headers['api-key'] === 'xkeysib-test' && body.to[0].email === 'fe1@uth.edu.vn' && body.sender.email === 'gui@gmail.com', [r, calls]);
+  global.fetch = async () => ({ ok: false, status: 401, text: async () => 'unauthorized' });
+  r = await PW('/forgot-password', { email: 'be1@uth.edu.vn' });
+  t('Email Brevo lỗi (sai key) -> API vẫn trả 200 chung, không sập', r.s === 200, r);
+  global.fetch = realFetch; delete process.env.BREVO_API_KEY; process.env.RESET_SHOW_LINK = 'true';
+
+  // ===================== Xóa dự án =====================
+  const D = '/:projectId';
+  r = await P('DELETE', D, 2, { projectId: '1' }); t('3.5 member xóa dự án -> 403', r.s === 403, r);
+  r = await P('DELETE', D, 6, { projectId: '1' }); t('3.5 leader xóa dự án -> 403', r.s === 403, r);
+  r = await P('DELETE', D, 5, { projectId: '1' }); t('3.5 người ngoài xóa dự án -> 403', r.s === 403, r);
+  r = await P('DELETE', D, 1, { projectId: '999' }); t('3.5 dự án không tồn tại -> 404', r.s === 404, r);
+  r = await P('DELETE', D, 1, { projectId: 'abc' }); t('3.5 id sai -> 400', r.s === 400, r);
+  t('3.5 dự án vẫn còn sau các lần bị từ chối', db.projects.some(x => x.id === 1));
+  r = await P('DELETE', D, 1, { projectId: '1' });
+  t('3.5 owner xóa dự án -> 200, xóa luôn task/thành viên/bình luận', r.s === 200 && !db.projects.some(x => x.id === 1) && !db.tasks.some(x => x.project_id === 1) && !db.pm.some(x => x.project_id === 1), r);
+  t('3.5 thành viên khác được báo (không gắn project_id)', db.notifs.some(n => n.type === 'project_deleted' && n.project_id === null));
+  r = await P('GET', '/', 1); t('3.5 danh sách dự án của owner không còn dự án đã xóa', r.s === 200 && !r.j.some(x => x.id === 1), r);
 
   // ===================== Hồ sơ + avatar =====================
   const U = (m, pth, u, b) => call('user', m, pth, u, {}, b);

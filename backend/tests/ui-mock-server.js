@@ -59,11 +59,15 @@ http.createServer((req, res) => {
       let at = b.before_id ? tasks.findIndex((x) => x.id === b.before_id && x.status === b.status) : -1;
       if (at < 0) { let last = -1; tasks.forEach((x, k) => { if (x.status === b.status) last = k; }); at = last + 1; }
       tasks.splice(at, 0, t); return send(res, 200, { message: 'Đã sắp xếp lại task!' }); }
-    if (url === '/api/tasks/mine') return send(res, 200, tasks.map((t) => ({ id: t.id, project_id: 1, project_name: projects[0].name, title: t.title, status: t.status, priority: t.priority, due_date: t.due_date, comment_count: t.comment_count })));
+    if (url === '/api/tasks/mine') return send(res, 200, tasks.map((t) => ({ id: t.id, project_id: 1, project_name: (projects[0] || {}).name, title: t.title, status: t.status, priority: t.priority, due_date: t.due_date, comment_count: t.comment_count })));
     if (url === '/api/dashboard') { const by = { todo: 0, in_progress: 0, review: 0, done: 0 }; tasks.forEach((t) => by[t.status]++);
-      return send(res, 200, { projects: projects.length, total: tasks.length, by_status: by, overdue: 1, assigned_to_me: 1, upcoming: tasks.filter((t) => t.assignee_id === 1 && t.status !== 'done').map((t) => ({ ...t, project_name: projects[0].name })) }); }
+      return send(res, 200, { projects: projects.length, total: tasks.length, by_status: by, overdue: 1, assigned_to_me: 1, upcoming: tasks.filter((t) => t.assignee_id === 1 && t.status !== 'done').map((t) => ({ ...t, project_name: (projects[0] || {}).name })) }); }
     if (url === '/api/projects' && req.method === 'GET') return send(res, 200, projects.map((p) => ({ ...p, task_count: tasks.length, done_count: tasks.filter((t) => t.status === 'done').length, member_count: members.length })));
     if (url === '/api/projects' && req.method === 'POST') { const id = projects.length + 1; projects.push({ id, name: b.name, description: b.description, project_role: 'owner' }); return send(res, 201, { message: 'Tạo dự án thành công!', projectId: id }); }
+    if ((m = url.match(/^\/api\/projects\/(\d+)$/)) && req.method === 'DELETE') {
+      const pr = projects.find((x) => x.id == m[1]); if (!pr) return send(res, 404, { message: 'Không tìm thấy dự án!' });
+      if (pr.project_role !== 'owner') return send(res, 403, { message: 'Chỉ chủ dự án (owner) mới được xóa dự án!' });
+      projects = projects.filter((x) => x.id != m[1]); return send(res, 200, { message: 'Đã xóa dự án!' }); }
     if (url === '/api/projects/1/members') { if (req.method === 'GET') return send(res, 200, members);
       const u = users.find((x) => x.email === b.email); if (!u) return send(res, 404, { message: 'Không tìm thấy người dùng với email này!' });
       members.push({ id: u.id, full_name: u.full_name, email: u.email, project_role: b.project_role }); return send(res, 200, { message: 'Đã thêm thành viên vào dự án!' }); }
