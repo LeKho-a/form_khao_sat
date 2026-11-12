@@ -341,7 +341,7 @@ function drawTopbar() {
     const crumb = ph.crumb || [];
     const act = ph.action;
     bar.className = 'topbar';
-    bar.replaceChildren(
+    bar.replaceChildren(...[
         h('button', { class: 'btn icon-btn menu-btn', type: 'button', title: 'Mở menu', 'aria-label': 'Mở menu', onclick: toggleSidebar }, icon('menu', 22)),
         h('div', { class: 'top-title' },
             crumb.length ? h('nav', { class: 'crumb', 'aria-label': 'Vị trí hiện tại' }, crumb.map((c, i) => {
@@ -363,7 +363,7 @@ function drawTopbar() {
         h('button', { class: 'btn icon-btn ghost top-help', id: 'btn-help', type: 'button', title: 'Trợ giúp', 'aria-label': 'Trợ giúp', onclick: openHelp }, icon('question', 22)),
         act ? h('button', { class: 'btn primary top-action', id: act.id || null, type: 'button', onclick: act.onClick }, icon(act.icon || 'plus', 18), h('span', { class: 'lbl', text: act.label })) : null,
         h('button', { class: 'me-btn', id: 'btn-profile-top', type: 'button', title: 'Hồ sơ cá nhân', 'aria-label': 'Hồ sơ cá nhân', onclick: openProfile },
-            avatar(u.full_name, true, u.avatar_url), h('span', { class: 'online-dot', 'aria-hidden': 'true' })));
+            avatar(u.full_name, true, u.avatar_url), h('span', { class: 'online-dot', 'aria-hidden': 'true' }))].filter(Boolean));
     window.__themeSpin = false;
     if (typeof mountBell === 'function') mountBell();
 }
