@@ -58,13 +58,29 @@ forms.forgot.addEventListener('submit', async (e) => {
     const btn = $('#f-btn'); btn.disabled = true;
     try {
         const r = await api('/auth/forgot-password', { method: 'POST', body: { email }, auth: false });
-        ok.replaceChildren(h('div', { text: r.message }));
-        // Chế độ DEMO (server chưa cấu hình SMTP): nhận được liên kết để dùng thử ngay
+        ok.replaceChildren(
+            h('div', { class: 'with-ic', style: 'font-weight:600' }, icon('envelope', 18), 'Hãy kiểm tra email của bạn'),
+            h('div', { class: 'small', style: 'margin-top:6px', text: `Nếu ${email} đã đăng ký, bạn sẽ nhận được thư chứa liên kết đặt lại mật khẩu trong ít phút (hiệu lực 1 giờ). Không thấy thư? Hãy xem mục Spam/Quảng cáo.` }));
+        // Chế độ DEMO (server bật RESET_SHOW_LINK): nhận được liên kết để dùng thử ngay, không cần email
         if (r.dev_reset_link && /^https?:\/\//.test(r.dev_reset_link)) {
             ok.append(h('div', { class: 'small', style: 'margin-top:8px' },
                 h('b', { text: 'Chế độ demo: ' }), h('a', { id: 'dev-link', href: r.dev_reset_link, text: 'Nhấp vào đây để đặt lại mật khẩu' })));
         }
         ok.classList.remove('hidden');
+        startCooldown(btn, 60);   // chống bấm liên tục; sau 60 giây cho gửi lại
+        return;
     } catch (ex) { err.textContent = ex.message; }
     btn.disabled = false;
 });
+
+// Nút "Gửi lại" đếm ngược để người dùng biết thư đã gửi và không bấm dồn
+function startCooldown(btn, secs) {
+    const label = 'Gửi lại liên kết';
+    let left = secs;
+    btn.disabled = true;
+    const tick = () => {
+        if (left <= 0) { btn.disabled = false; btn.textContent = label; return; }
+        btn.textContent = `${label} (${left}s)`; left--; setTimeout(tick, 1000);
+    };
+    tick();
+}

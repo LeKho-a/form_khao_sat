@@ -52,6 +52,14 @@ function fmtDateTime(iso) {
     const d = new Date(iso);
     return isNaN(d) ? '' : `${pad2(d.getHours())}:${pad2(d.getMinutes())} ${fmtDate(iso)}`;
 }
+// Ngày ngắn gọn kiểu thẻ Kanban: 14/11 (thêm năm nếu khác năm nay)
+function fmtShort(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const base = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+    return d.getFullYear() === new Date().getFullYear() ? base : base + '/' + d.getFullYear();
+}
 // 'overdue' (quá hạn), 'soon' (còn <= 2 ngày) hoặc ''
 function dueState(iso, status) {
     if (!iso || status === 'done') return '';
@@ -68,7 +76,7 @@ const avatar = (name, big, url) => url
     ? h('img', { class: 'avatar img' + (big ? ' lg' : ''), src: assetUrl(url), alt: name || '', title: name || '' })
     : h('span', { class: 'avatar' + (big ? ' lg' : ''), title: name || '', text: initials(name) });
 const roleBadge = (role) => h('span', { class: 'badge b-' + role, text: ROLE_LABEL[role] || role });
-const priorityBadge = (p) => h('span', { class: 'badge p-' + p }, icon('flag', 12), PRIORITY_LABEL[p] || p); // có icon + chữ: không chỉ dựa vào màu
+const priorityBadge = (p) => h('span', { class: 'badge p-' + p, text: PRIORITY_LABEL[p] || p }); // luôn có chữ: không chỉ dựa vào màu
 const debounce = (fn, ms = 250) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 
 /* ---------- Toast ---------- */
@@ -219,6 +227,31 @@ function openCreateProject() {
     };
 }
 
+/* ---------- Xóa dự án (chỉ chủ dự án) ---------- */
+// opts.redirect: sau khi xóa chuyển sang trang này (kèm thông báo); opts.onDone: chạy lại dữ liệu trang hiện tại
+async function deleteProject(p, opts = {}) {
+    const ok = await confirmBox(`Xóa dự án "${p.name}"? Toàn bộ task, bình luận và danh sách thành viên của dự án sẽ bị xóa vĩnh viễn, không thể khôi phục.`, 'Xóa dự án');
+    if (!ok) return false;
+    try {
+        await api('/projects/' + p.id, { method: 'DELETE' });
+    } catch (ex) { toast(ex.message, 'error'); return false; }
+    window.__projects = (window.__projects || []).filter((x) => x.id !== p.id);
+    drawSidebar();
+    const msg = `Đã xóa dự án "${p.name}"`;
+    if (opts.redirect) {
+        try { sessionStorage.setItem('tm_flash', JSON.stringify({ message: msg, type: 'success' })); } catch (e) { /* bỏ qua */ }
+        go(opts.redirect);
+    } else {
+        toast(msg, 'success');
+        if (opts.onDone) await opts.onDone();
+    }
+    return true;
+}
+
+function refreshSidebarProjects() {
+    return api('/projects').then((list) => { window.__projects = list; drawSidebar(); }).catch(() => {});
+}
+
 /* ---------- Khung giao diện: thanh bên + thanh trên ---------- */
 const PAGE = (() => {
     const file = location.pathname.split('/').pop();
@@ -231,6 +264,12 @@ const openProfile = () => { if (typeof openProfileModal === 'function') openProf
 const navItem = (ico, label, href, active) =>
     h('a', { class: 'side-link' + (active ? ' active' : ''), href, 'aria-current': active ? 'page' : null }, icon(ico, 20), label);
 
+// Mỗi trang khai báo tiêu đề của mình (đường dẫn, tiêu đề lớn, nút hành động chính) -> hiện trên thanh trên như mẫu
+function setPageHead(head) {
+    window.__pageHead = { ...(window.__pageHead || {}), ...head };
+    if (window.redrawTopbar) window.redrawTopbar();
+}
+
 function toggleSidebar() {
     const side = $('#sidebar');
     const open = side.classList.toggle('open');
@@ -238,53 +277,93 @@ function toggleSidebar() {
     if (open) document.body.append(h('div', { class: 'scrim', id: 'scrim', onclick: toggleSidebar }));
 }
 
+function toggleUserMenu(e) {
+    if (e) e.stopPropagation();
+    window.__userMenu = !window.__userMenu;
+    drawSidebar();
+}
+document.addEventListener('click', () => { if (window.__userMenu) { window.__userMenu = false; drawSidebar(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && window.__userMenu) { window.__userMenu = false; drawSidebar(); } });
+
 function drawSidebar() {
     const side = $('#sidebar');
     if (!side) return;
     const u = Auth.user || {};
     const projects = window.__projects || [];
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const menu = window.__userMenu ? h('div', { class: 'user-menu', id: 'user-menu', role: 'menu', onclick: (e) => e.stopPropagation() },
+        h('div', { class: 'um-head' }, avatar(u.full_name, true, u.avatar_url),
+            h('div', { class: 'who' }, h('div', { class: 'name', text: u.full_name || '' }), h('div', { class: 'mail', text: u.email || '' }))),
+        h('button', { class: 'side-link', type: 'button', role: 'menuitem', onclick: () => { window.__userMenu = false; drawSidebar(); openProfile(); } }, icon('user-circle', 20), 'Hồ sơ cá nhân'),
+        h('button', { class: 'side-link', type: 'button', role: 'menuitem', id: 'btn-logout', onclick: () => Auth.logout() }, icon('logout', 20), 'Đăng xuất')) : null;
+
     side.replaceChildren(
         h('a', { class: 'side-brand', href: 'dashboard.html', 'aria-label': 'Task Manager - về bảng điều khiển' },
             h('img', { class: 'logo-img', src: 'img/logo.svg', alt: '', width: 38, height: 38 }), h('span', null, 'Task', h('b', { text: 'Manager' }))),
-        h('button', { class: 'side-user', id: 'btn-profile', type: 'button', title: 'Hồ sơ cá nhân', onclick: openProfile },
-            avatar(u.full_name, true, u.avatar_url),
-            h('div', { class: 'who' }, h('div', { class: 'name', text: u.full_name || '' }), h('div', { class: 'mail', text: u.email || '' }))),
-        navItem('dashboard', 'Bảng điều khiển', 'dashboard.html', PAGE === 'dashboard'),
-        navItem('mytasks', 'Việc của tôi', 'my-tasks.html', PAGE === 'mytasks'),
-        h('div', { class: 'side-title' }, h('span', { text: 'DỰ ÁN' }),
-            h('button', { class: 'side-add', id: 'btn-side-add', type: 'button', title: 'Dự án mới', 'aria-label': 'Tạo dự án mới', onclick: openCreateProject }, icon('plus', 14))),
-        h('div', { class: 'side-projects' }, projects.length
-            ? projects.map((p) => h('a', { class: 'side-link' + (PAGE === 'project:' + p.id ? ' active' : ''), href: 'board.html?project=' + p.id, title: p.name },
-                h('span', { class: 'pdot', style: 'background:' + projectColor(p.id) }),
-                h('span', { style: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis', text: p.name })))
-            : h('div', { class: 'side-empty', text: 'Chưa có dự án' })),
+        h('nav', { class: 'side-nav', 'aria-label': 'Điều hướng chính' },
+            navItem('dashboard', 'Bảng điều khiển', 'dashboard.html', PAGE === 'dashboard'),
+            h('div', { class: 'side-row' },
+                h('a', { class: 'side-link', href: 'dashboard.html#du-an' }, icon('folders', 20), 'Dự án'),
+                h('button', { class: 'side-add', id: 'btn-side-add', type: 'button', title: 'Dự án mới', 'aria-label': 'Tạo dự án mới', onclick: openCreateProject }, icon('plus', 14))),
+            h('div', { class: 'side-projects' }, projects.length
+                ? projects.map((p) => h('a', { class: 'side-link' + (PAGE === 'project:' + p.id ? ' active' : ''), href: 'board.html?project=' + p.id, title: p.name, 'aria-current': PAGE === 'project:' + p.id ? 'page' : null },
+                    h('span', { class: 'pdot', style: 'background:' + projectColor(p.id) }),
+                    h('span', { class: 'plabel', text: p.name })))
+                : h('div', { class: 'side-empty', text: 'Chưa có dự án' })),
+            navItem('mytasks', 'Việc của tôi', 'my-tasks.html', PAGE === 'mytasks'),
+            h('button', { class: 'side-link', type: 'button', id: 'btn-settings', onclick: openProfile }, icon('settings', 20), 'Cài đặt')),
         h('div', { class: 'side-spacer' }),
-        h('button', { class: 'side-link', type: 'button', onclick: openProfile }, icon('settings', 20), 'Hồ sơ & cài đặt'),
-        h('button', { class: 'side-link', type: 'button', onclick: () => Auth.logout() }, icon('logout', 20), 'Đăng xuất'));
+        h('div', { class: 'side-foot' },
+            menu,
+            h('button', { class: 'theme-switch', id: 'theme-switch', type: 'button', role: 'switch', 'aria-checked': dark ? 'true' : 'false', 'aria-label': 'Chế độ tối', title: 'Đổi giao diện sáng/tối', onclick: toggleTheme }, h('span', { class: 'knob' })),
+            h('span', { class: 'foot-label', text: 'Chế độ tối' }),
+            h('button', { class: 'foot-more', id: 'btn-user-menu', type: 'button', 'aria-label': 'Tài khoản', 'aria-haspopup': 'menu', 'aria-expanded': window.__userMenu ? 'true' : 'false', title: 'Tài khoản', onclick: toggleUserMenu }, icon('caret-down', 18))));
+}
+
+function openHelp() {
+    const tips = [
+        ['Thêm công việc', 'Bấm nút "Tạo công việc" hoặc dấu + ở đầu mỗi cột trên bảng Kanban.'],
+        ['Chuyển trạng thái', 'Kéo thả thẻ sang cột khác, hoặc kéo trong cột để đổi thứ tự.'],
+        ['Mở chi tiết', 'Bấm vào thẻ để sửa nội dung, giao người làm, xóa và bình luận.'],
+        ['Thành viên', 'Chủ dự án và trưởng nhóm thêm thành viên bằng email đã có tài khoản.'],
+        ['Xóa dự án', 'Chỉ chủ dự án xóa được. Mọi task và bình luận của dự án sẽ mất vĩnh viễn.'],
+        ['Chế độ tối', 'Gạt công tắc ở cuối thanh bên để đổi giao diện sáng/tối.']
+    ];
+    openModal('Hướng dẫn nhanh', h('div', { class: 'help-list' }, tips.map(([t, d]) =>
+        h('div', { class: 'help-item' }, h('b', { text: t }), h('div', { class: 'muted small', text: d })))));
 }
 
 function drawTopbar() {
     const bar = $('#topbar');
     if (!bar) return;
     const u = Auth.user || {};
-    const now = new Date();
+    const ph = window.__pageHead || {};
+    const crumb = ph.crumb || [];
+    const act = ph.action;
     bar.className = 'topbar';
     bar.replaceChildren(
         h('button', { class: 'btn icon-btn menu-btn', type: 'button', title: 'Mở menu', 'aria-label': 'Mở menu', onclick: toggleSidebar }, icon('menu', 22)),
-        h('form', { class: 'search', onsubmit: (e) => {
+        h('div', { class: 'top-title' },
+            crumb.length ? h('nav', { class: 'crumb', 'aria-label': 'Vị trí hiện tại' }, crumb.map((c, i) => {
+                const last = i === crumb.length - 1;
+                const item = typeof c === 'string' ? { text: c } : c;
+                return [i ? h('span', { class: 'sep', 'aria-hidden': 'true', text: '/' }) : null,
+                    item.href && !last ? h('a', { href: item.href, text: item.text }) : h('span', { class: last ? 'cur' : '', 'aria-current': last ? 'page' : null, text: item.text })];
+            })) : null,
+            h('h1', { id: ph.titleId || 'page-title' }, h('span', { class: 'ttl', text: ph.title || '' }), ph.role ? roleBadge(ph.role) : null)),
+        h('div', { class: 'grow' }),
+        h('form', { class: 'search', role: 'search', onsubmit: (e) => {
             e.preventDefault();
             const v = $('#global-search').value.trim();
             go('my-tasks.html' + (v ? '?q=' + encodeURIComponent(v) : ''));
         } }, icon('search', 18),
             h('input', { id: 'global-search', type: 'search', 'aria-label': 'Tìm công việc của tôi', placeholder: 'Tìm công việc của tôi...',
                 value: PAGE === 'mytasks' ? new URLSearchParams(location.search).get('q') || '' : '' })),
-        h('div', { class: 'grow' }),
-        h('div', { class: 'date-chip' }, h('b', { text: DAYS_VI[now.getDay()] }), fmtDate(now)),
         h('div', { id: 'bell-slot' }),
-        h('button', { class: 'btn icon-btn ghost', type: 'button', title: 'Đổi giao diện sáng/tối', 'aria-label': 'Đổi giao diện sáng hoặc tối', onclick: toggleTheme },
-            icon(document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon', 22, window.__themeSpin ? 'spin-in' : '')),
-        h('button', { class: 'btn ghost', id: 'btn-profile-top', type: 'button', title: 'Hồ sơ cá nhân', 'aria-label': 'Hồ sơ cá nhân', style: 'padding:2px;border-radius:50%', onclick: openProfile },
-            avatar(u.full_name, true, u.avatar_url)));
+        h('button', { class: 'btn icon-btn ghost top-help', id: 'btn-help', type: 'button', title: 'Trợ giúp', 'aria-label': 'Trợ giúp', onclick: openHelp }, icon('question', 22)),
+        act ? h('button', { class: 'btn primary top-action', id: act.id || null, type: 'button', onclick: act.onClick }, icon(act.icon || 'plus', 18), h('span', { class: 'lbl', text: act.label })) : null,
+        h('button', { class: 'me-btn', id: 'btn-profile-top', type: 'button', title: 'Hồ sơ cá nhân', 'aria-label': 'Hồ sơ cá nhân', onclick: openProfile },
+            avatar(u.full_name, true, u.avatar_url), h('span', { class: 'online-dot', 'aria-hidden': 'true' })));
     window.__themeSpin = false;
     if (typeof mountBell === 'function') mountBell();
 }
@@ -299,8 +378,15 @@ function renderTopbar() {
     draw();
     // Làm mới hồ sơ (ảnh đại diện...) + danh sách dự án cho thanh bên; bật kênh thông báo thời gian thực
     api('/users/me').then((me) => { Auth.save(Auth.token, { ...Auth.user, ...me }); draw(); }).catch(() => {});
-    api('/projects').then((list) => { window.__projects = list; drawSidebar(); }).catch(() => {});
+    refreshSidebarProjects();
     if (typeof startRealtime === 'function') startRealtime();
+    // Chủ dự án xóa dự án ở nơi khác -> danh sách dự án bên trái tự cập nhật
+    window.addEventListener('tm:project_update', (e) => { if (e.detail && e.detail.action === 'project_deleted') refreshSidebarProjects(); });
+    // Thông báo ngắn lưu từ trang trước (ví dụ vừa xóa dự án xong rồi chuyển trang)
+    try {
+        const f = JSON.parse(sessionStorage.getItem('tm_flash') || 'null');
+        if (f) { sessionStorage.removeItem('tm_flash'); setTimeout(() => toast(f.message, f.type), 250); }
+    } catch (e) { /* bỏ qua */ }
 }
 
 /* ---------- Trạng thái rỗng thân thiện + lời chào theo giờ ---------- */

@@ -1,5 +1,6 @@
 Auth.require();
 renderTopbar();
+setPageHead({ crumb: ['Không gian làm việc', 'Việc của tôi'], title: 'Việc của tôi' });
 
 const mt = { tasks: [], tab: 'open', q: new URLSearchParams(location.search).get('q') || '', priority: '', project: '' };
 $('#mt-q').value = mt.q;

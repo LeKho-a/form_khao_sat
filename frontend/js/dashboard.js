@@ -1,6 +1,8 @@
 Auth.require();
 renderTopbar();
-$('#hello').replaceChildren(greeting() + ', ' + ((Auth.user && Auth.user.full_name) || 'bạn'));
+setPageHead({ titleId: 'hello', crumb: ['Không gian làm việc', 'Bảng điều khiển'],
+    title: greeting() + ', ' + ((Auth.user && Auth.user.full_name) || 'bạn'),
+    action: { id: 'btn-new-project', label: 'Dự án mới', icon: 'plus', onClick: openCreateProject } });
 $('#stats').replaceChildren(...skeletons(4, 'sk-card'));
 $('#mine').replaceChildren(...skeletons(3, 'sk-row'));
 
@@ -68,8 +70,12 @@ function renderProjects(list) {
     box.replaceChildren(...stagger(list.map((p) => {
         const total = Number(p.task_count || 0), done = Number(p.done_count || 0);
         const pct = total ? Math.round((done / total) * 100) : 0;
+        const del = p.project_role === 'owner'          // chỉ chủ dự án mới thấy nút xóa
+            ? h('button', { class: 'btn icon-btn ghost proj-del', type: 'button', title: 'Xóa dự án', 'aria-label': 'Xóa dự án ' + p.name,
+                onclick: (e) => { e.stopPropagation(); deleteProject(p, { onDone: load }); } }, icon('trash', 18))
+            : null;
         return h('div', { class: 'card project-card', style: '--pc:' + projectColor(p.id), onclick: () => { go('board.html?project=' + p.id); } },
-            h('div', { class: 'row' }, h('h3', { text: p.name, style: 'margin:0' }), roleBadge(p.project_role)),
+            h('div', { class: 'row' }, h('h3', { text: p.name, style: 'margin:0' }), h('div', { class: 'row-r' }, roleBadge(p.project_role), del)),
             h('p', { text: p.description || 'Chưa có mô tả' }),
             h('div', { class: 'progress' }, h('i', { style: `width:${pct}%;background:${projectColor(p.id)}` })),
             h('div', { class: 'muted small', style: 'display:flex;justify-content:space-between' },
@@ -78,13 +84,13 @@ function renderProjects(list) {
     }), 8));
 }
 
-$('#btn-new-project').onclick = openCreateProject;
-
-(async () => {
+async function load() {
     try {
         const [stats, projects, mine] = await Promise.all([api('/dashboard'), api('/projects'), api('/tasks/mine')]);
         dash.mine = mine;
         renderGreeting(mine);
         renderStats(stats); renderProgress(stats); renderMine(); renderProjects(projects);
     } catch (e) { toast(e.message, 'error'); }
-})();
+}
+load();
+window.addEventListener('tm:project_update', (e) => { if (e.detail && e.detail.action === 'project_deleted') load(); });

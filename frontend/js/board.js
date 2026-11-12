@@ -1,5 +1,7 @@
 Auth.require();
 renderTopbar();
+setPageHead({ crumb: [{ text: 'Dự án', href: 'dashboard.html#du-an' }, 'Đang tải...'], title: 'Đang tải...',
+    action: { id: 'btn-add', label: 'Tạo công việc', icon: 'plus', onClick: () => openTaskModal(null) } });
 
 const projectId = Number(new URLSearchParams(location.search).get('project'));
 if (!projectId) location.replace('dashboard.html');
@@ -29,15 +31,19 @@ function visibleTasks() {
 function taskCard(t) {
     const ds = dueState(t.due_date, t.status);
     const days = ds === 'overdue' ? Math.max(1, Math.ceil((Date.now() - new Date(t.due_date)) / 86400000)) : 0;
-    const card = h('div', { class: 'task pr-' + t.priority, draggable: 'true', tabindex: '0', 'data-id': t.id },
-        days ? h('div', { class: 'overdue-strip', text: `Quá hạn ${days} ngày` }) : null,
-        h('div', { class: 'task-top' }, priorityBadge(t.priority), h('span', { class: 'task-id', text: '#' + t.id })),
-        h('div', { class: 'title', text: t.title }),
+    const isDone = t.status === 'done';
+    const card = h('div', { class: 'task' + (isDone ? ' is-done' : ''), draggable: 'true', tabindex: '0', 'data-id': t.id },
+        h('div', { class: 't-head' },
+            h('div', { class: 'title', text: t.title }),
+            isDone ? h('span', { class: 'done-check', role: 'img', 'aria-label': 'Hoàn thành', title: 'Hoàn thành' }, icon('check', 15)) : priorityBadge(t.priority)),
+        t.description ? h('div', { class: 'desc', text: t.description }) : null,
+        h('div', { class: 'chips' }, h('span', { class: 'chip task-id', text: '#' + t.id })),
+        Number(t.comment_count) ? h('div', { class: 'meta-line with-ic', title: t.comment_count + ' bình luận' }, icon('comment', 15), t.comment_count) : null,
         h('div', { class: 'meta' },
-            h('div', { class: 'left' },
-                t.due_date ? h('span', { class: 'due with-ic ' + ds }, icon('calendar', 14), fmtDate(t.due_date)) : null,
-                Number(t.comment_count) ? h('span', { class: 'with-ic', title: t.comment_count + ' bình luận' }, icon('comment', 14), t.comment_count) : null),
-            t.assignee_name ? avatar(t.assignee_name, false, t.assignee_avatar) : h('span', { text: 'Chưa giao' })));
+            t.due_date
+                ? h('span', { class: 'with-ic due ' + ds }, icon('clock', 15), fmtShort(t.due_date) + (days ? ` · quá hạn ${days} ngày` : ''))
+                : h('span', { class: 'muted', text: 'Chưa đặt hạn' }),
+            t.assignee_name ? avatar(t.assignee_name, false, t.assignee_avatar) : h('span', { class: 'muted', text: 'Chưa giao' })));
     card.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('text/plain', String(t.id));
         e.dataTransfer.effectAllowed = 'move';
@@ -96,7 +102,7 @@ function renderBoard() {
         });
         return h('div', { class: 'column', style: `--c:${STATUS_COLOR[key]}` },
             h('div', { class: 'col-head' },
-                h('div', null, h('span', { text: STATUS_LABEL[key] }), h('span', { class: 'count', text: items.length })),
+                h('div', { class: 'col-title' }, h('span', { text: STATUS_LABEL[key] }), h('span', { class: 'count', text: `(${items.length})` })),
                 h('button', { class: 'btn sm', type: 'button', title: 'Thêm task vào cột này', 'aria-label': 'Thêm task vào cột ' + STATUS_LABEL[key], onclick: () => openTaskModal(null, key) }, icon('plus', 16))),
             body);
     }));
@@ -347,7 +353,6 @@ function bindFilters() {
         $('#f-q').value = ''; $('#f-priority').value = ''; $('#f-assignee').value = '';
         renderBoard();
     };
-    $('#btn-add').onclick = () => openTaskModal(null);
     $('#btn-members').onclick = openMembersModal;
     const setView = (v) => { state.view = v; localStorage.setItem('tm_view', v); renderBoard(); };
     $('#view-kanban').onclick = () => setView('kanban');
@@ -364,18 +369,26 @@ $('#board').replaceChildren(...skeletons(4, 'sk-col'));
         if (!p) { toast('Không tìm thấy dự án.', 'error'); setTimeout(() => location.replace('dashboard.html'), 1200); return; }
         Object.assign(state, { project: p, role: p.project_role, members, tasks });
         document.title = p.name + ' - Task Manager';
-        $('#p-name').replaceChildren(p.name, roleBadge(p.project_role));
+        setPageHead({ crumb: [{ text: 'Dự án', href: 'dashboard.html#du-an' }, p.name], title: p.name, role: p.project_role });
         $('#p-desc').textContent = p.description || '';
+        const delBtn = $('#btn-delete-project');                 // chỉ chủ dự án mới thấy nút xóa
+        delBtn.classList.toggle('hidden', p.project_role !== 'owner');
+        delBtn.onclick = () => deleteProject(p, { redirect: 'dashboard.html' });
         fillAssigneeFilter(); renderTeam(); bindFilters(); renderBoard();
     } catch (e) {
         toast(e.message, 'error');
-        $('#p-name').textContent = 'Không tải được dự án';
+        setPageHead({ title: 'Không tải được dự án', crumb: [] });
     }
 })();
 
 /* ================= Thời gian thực: người khác đổi task -> bảng tự tải lại ================= */
 window.addEventListener('tm:project_update', debounce(function refresh(e) {
     if (!e.detail || e.detail.project_id !== projectId) return;
+    if (e.detail.action === 'project_deleted') {            // chủ dự án vừa xóa dự án này
+        toast('Dự án này vừa bị chủ dự án xóa.', 'error');
+        setTimeout(() => go('dashboard.html'), 1500);
+        return;
+    }
     if (document.querySelector('.task.dragging')) { setTimeout(() => refresh(e), 1000); return; } // đang kéo thì đợi
     reloadTasks().catch(() => {});
 }, 300));

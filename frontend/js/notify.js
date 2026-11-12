@@ -7,7 +7,8 @@ function mountBell() {
     const btn = h('button', {
         class: 'btn sm ghost bell', type: 'button', id: 'btn-bell', title: 'Thông báo', 'aria-label': 'Thông báo',
         onclick: (e) => { e.stopPropagation(); Notify.open = !Notify.open; Notify.animate = Notify.open; mountBell(); }
-    }, icon('bell', 22), Notify.unread > 0 ? h('span', { class: 'dot-badge' + (Notify.bump ? ' bump' : ''), id: 'bell-count', text: Notify.unread > 99 ? '99+' : Notify.unread }) : null);
+    }, icon('bell', 22), Notify.unread > 0 ? h('span', { class: 'dot-badge' + (Notify.bump ? ' bump' : ''), id: 'bell-count' }, h('span', { class: 'sr-only', text: Notify.unread > 99 ? '99+' : Notify.unread })) : null);
+    btn.title = Notify.unread > 0 ? `Thông báo (${Notify.unread} chưa đọc)` : 'Thông báo';
     if (Notify.bump) btn.classList.add('ring');                    // chuông rung khi có thông báo mới
     Notify.bump = false;
     slot.replaceChildren(...[btn, Notify.open ? notifPanel() : null].filter(Boolean)); // replaceChildren(null) sẽ in chữ "null"
